@@ -1,7 +1,7 @@
 ;/--\--/--\--/--\--/--\--/--\--/--\--/--\--/--\--/--\--/--\--/--\--/--\--/--\--/--\--/--\--/--\--/--\--/--\--/--\--/--\--/--\
 ;Description
 ;\--/--\--/--\--/--\--/--\--/--\--/--\--/--\--/--\--/--\--/--\--/--\--/--\--/--\--/--\--/--\--/--\--/--\--/--\--/--\--/--\--/
-; Performs Start of Day on the QA systems
+; Compares movie titles in an excel file to OMDB/IMDB for extra information which is re-saved to Excel
 ; 
 The_ProjectName := "MovieDBClone"
 The_VersionNumb = 0.3.0
