@@ -3,7 +3,7 @@
 ;\--/--\--/--\--/--\--/--\--/--\--/--\--/--\--/--\--/--\--/--\--/--\--/--\--/--\--/--\--/--\--/--\--/--\--/--\--/--\--/--\--/
 ; Performs Start of Day on the QA systems
 ; 
-The_ProjectName := "OMDB Cloner"
+The_ProjectName := "MovieDBClone"
 The_VersionNumb = 0.3.0
 
 ;~~~~~~~~~~~~~~~~~~~~~
@@ -60,10 +60,9 @@ log.add("GUI launched.")
 
 ; Create Excel Object
 Excel_obj := ComObjCreate("Excel.Application") ; create Excel Application object
-Excel_obj.Visible := false ; make Excel Application invisible
+Excel_obj.Visible := true ; make Excel Application invisible
 Excel_obj.Workbooks.Open(A_ScriptDir . "\ExampleBook.xlsx") ;open an existing file
-Excel_obj.ActiveWorkbook.saved := true
-; Excel_obj.ActiveWorkbook.SaveAs(The_ArchivePath)
+; Excel_obj.ActiveWorkbook.SaveAs(A_ScriptDir . "\ExampleBook.xlsx")
 ; Excel_obj.Workbooks.Add ; create a new workbook (oWorkbook := oExcel.Workbooks.Add)
 
 
@@ -71,7 +70,6 @@ Excel_obj.ActiveWorkbook.saved := true
 ;Read settings.JSON for global settings
 FileRead, The_MemoryFile, % A_ScriptDir "\settings.json"
 Settings := JSON.parse(The_MemoryFile)
-Array_GUI(Settings)
 The_MemoryFile := ""
 
 
@@ -85,11 +83,13 @@ KeepReading := true
 While (KeepReading = true) {
     if (Index = 1) {
         ; do not read the column header
+        Index++
         continue
     }
+
     rawtext := Excel_obj.Range("A" Index).Value
-        TheMovie_title := Fn_QuickRegEx(rawtext,"([\w ]+)")
-        TheMovie_year := Fn_QuickRegEx(rawtext,"\((\d+)\)")
+    TheMovie_title := Fn_QuickRegEx(rawtext,"([\w ]+)")
+    TheMovie_year := Fn_QuickRegEx(rawtext,"\((\d+)\)")
     if (TheMovie_title != "null") {
 
     } else {
@@ -97,26 +97,41 @@ While (KeepReading = true) {
         break
     }
     AllMoviesDB[Index,"rawtext"] := rawtext
-    AllMoviesDB[Index,"excelindex"] := rawtext
+    AllMoviesDB[Index,"excelindex"] := Index
     AllMoviesDB[Index,"title"] := TheMovie_title
     if (TheMovie_year != "null") {
         AllMoviesDB[Index,"year"] := TheMovie_year
     }
     Index++
 }
+
 SetTimer, PingIMDB, 1000
-Return
+; Array_GUI(AllMoviesDB)
+return
+
+
 
 PingIMDB:
 Loop, % AllMoviesDB.MaxIndex() {
     If (AllMoviesDB[A_Index, "checked"] != true) {
-        Data := Fn_CheckIMDB(AllMoviesDB[A_Index, "title"])
+        if (AllMoviesDB[A_Index, "year"] ) {
+            data := Fn_CheckIMDB(AllMoviesDB[A_Index, "title"], AllMoviesDB[A_Index, "year"])
+        } else {
+            data := Fn_CheckIMDB(AllMoviesDB[A_Index, "title"])
+        }
 
         ;Set JSON data to true so it doesn't get anymore
         AllMoviesDB[A_Index, "checked"] := true
+
+        excelindex := AllMoviesDB[A_Index, "excelindex"]
+        msgbox, % data.Actors
+        Excel_obj.Range("B" excelindex).Value := data.Actors
+        Excel_obj.ActiveWorkbook.saved := true
+        Excel_obj.ActiveWorkbook.SaveAs(A_ScriptDir . "\ExampleBook.xlsx")
     }
 }
-Return 
+Excel_obj.Quit
+return
 
 ; Array_GUI(AllMoviesDB)
 ExitApp, 1
@@ -193,14 +208,20 @@ Fn_CheckIMDB(para_movietitle, para_year := "null")
     }
 
     clipboard := endpoint
-    msgbox, % endpoint
+    ; msgbox, % endpoint
     http := ComObjCreate("WinHttp.WinHttpRequest.5.1")
     http.Open("Get", endpoint, False)
-    http.SetRequestHeader("Accept", "application/json")
+    ; http.SetRequestHeader("Accept", "application/json")
     http.Send()
-    Array_GUI(http)
-    msgbox, % http.ResponseText
+    ; msgbox, % http.ResponseText
 
+    ;parse results and return if valid
+    l_data := JSON.parse(http.ResponseText)
+    if (l_data.Title) {
+        return % l_data
+    } else {
+        return false
+    }
     ;Save Raw just for later viewing
-    return % http.ResponseText
+    
 }
