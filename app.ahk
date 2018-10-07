@@ -3,7 +3,7 @@
 ;\--/--\--/--\--/--\--/--\--/--\--/--\--/--\--/--\--/--\--/--\--/--\--/--\--/--\--/--\--/--\--/--\--/--\--/--\--/--\--/--\--/
 ; Performs Start of Day on the QA systems
 ; 
-The_ProjectName := "MovieDBClone"
+The_ProjectName := "OMDB Cloner"
 The_VersionNumb = 0.3.0
 
 ;~~~~~~~~~~~~~~~~~~~~~
