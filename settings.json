@@ -1,0 +1,5 @@
+{
+    "endpoint": "http://www.omdbapi.com/?",
+    "optionals": "&type=movie&r=json",
+    "key": ""
+}
