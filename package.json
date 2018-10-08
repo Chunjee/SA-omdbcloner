@@ -1,0 +1,20 @@
+{
+    "name": "sa-omdbcloner.ahk",
+    "version": "1.0.0",
+    "description": "clones data from IMDB to one large excel sheet",
+    "main": "app.ahk",
+    "scripts": {
+        "newinstall": "yarn install --modules-folder ./lib"
+    },
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/Chunjee/SA-omdbcloner"
+    },
+    "dependencies": {
+        "log": "chunjee/ahk-log.ahk",
+        "json": "chunjee/json.ahk"
+     },
+    
+    "author": "uncredited",
+    "license": "MIT"
+}

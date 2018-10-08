@@ -4,7 +4,7 @@
 ; Compares movie titles in an excel file to OMDB/IMDB for extra information which is re-saved to Excel
 ; 
 The_ProjectName := "MovieDBClone"
-The_VersionNumb = 0.3.0
+The_VersionNumb = 1.0.0
 
 ;~~~~~~~~~~~~~~~~~~~~~
 ;Compile Options
@@ -54,17 +54,10 @@ log.preEntryString := "%A_NowUTC% -- "
 log.initalizeNewLogFile(false, The_ProjectName " v" The_VersionNumb " log begins...`n")
 log.add(The_ProjectName " launched from user " A_UserName " on the machine " A_ComputerName ". Version: v" The_VersionNumb)
 
-;;Create a blank GUI
-GUI()
-log.add("GUI launched.")
 
-; Create Excel Object
-Excel_obj := ComObjCreate("Excel.Application") ; create Excel Application object
-Excel_obj.Visible := true ; make Excel Application invisible
-Excel_obj.Workbooks.Open(A_ScriptDir . "\ExampleBook.xlsx") ;open an existing file
-; Excel_obj.ActiveWorkbook.SaveAs(A_ScriptDir . "\ExampleBook.xlsx")
-; Excel_obj.Workbooks.Add ; create a new workbook (oWorkbook := oExcel.Workbooks.Add)
-
+; msgbox, % "test1 " Fn_StringSimilarityAttempt("test", "test")
+; msgbox, % "test2 " Fn_StringSimilarityAttempt("tasddddasd", "teiiiiiter")
+; msgbox, % "test3 " Fn_StringSimilarityAttempt("asdjkjerkquiqwue", "popiiklkpol..liki")
 
 
 ;Read settings.JSON for global settings
@@ -75,6 +68,19 @@ The_MemoryFile := ""
 
 ;Create some god vars
 AllMoviesDB := []
+The_ExcelPath := A_ScriptDir "\" Settings.excelfilename
+
+
+; Create Excel Object
+Excel_obj := ComObjCreate("Excel.Application") ; create Excel Application object
+Excel_obj.Visible := true ; make Excel Application invisible
+Excel_obj.Workbooks.Open(The_ExcelPath) ;open an existing file
+
+
+;;Create a blank GUI
+GUI()
+log.add("GUI launched.")
+
 
 
 ; Read all lines in the excel
@@ -90,8 +96,12 @@ While (KeepReading = true) {
     rawtext := Excel_obj.Range("A" Index).Value
     TheMovie_title := Fn_QuickRegEx(rawtext,"([\w ]+)")
     TheMovie_year := Fn_QuickRegEx(rawtext,"\((\d+)\)")
-    if (TheMovie_title != "null") {
+    if (Excel_obj.Range("B" Index).Value != "") {
+        AllMoviesDB[Index, "checked"] := true
+    }
 
+    if (TheMovie_title != "null") {
+        
     } else {
         KeepReading := false
         break
@@ -107,6 +117,17 @@ While (KeepReading = true) {
 
 SetTimer, PingIMDB, 1000
 ; Array_GUI(AllMoviesDB)
+
+
+;;Fill GUI with whats being done
+INDEX := 0
+for key, value in AllMoviesDB { ;;- Each step
+    INDEX++
+    LV_Add(, AllMoviesDB[A_Index,"rawtext"])
+}
+;resize columns to fit all text
+LV_ModifyCol()
+
 return
 
 
@@ -114,63 +135,49 @@ return
 PingIMDB:
 Loop, % AllMoviesDB.MaxIndex() {
     If (AllMoviesDB[A_Index, "checked"] != true) {
+        ;do not check blank titles
+        if (AllMoviesDB[A_Index, "title"] = "") {
+            continue
+        }
+        log.add("checking API for the following title:" AllMoviesDB[A_Index, "title"])
         if (AllMoviesDB[A_Index, "year"] ) {
+            log.add(AllMoviesDB[A_Index, "title"] " being searched with the year: " AllMoviesDB[A_Index, "year"])
             data := Fn_CheckIMDB(AllMoviesDB[A_Index, "title"], AllMoviesDB[A_Index, "year"])
         } else {
+            log.add(AllMoviesDB[A_Index, "title"] " being searched with the without a year")
             data := Fn_CheckIMDB(AllMoviesDB[A_Index, "title"])
         }
-
-        ;Set JSON data to true so it doesn't get anymore
+        ; Set JSON data to true so it doesn't get anymore
         AllMoviesDB[A_Index, "checked"] := true
 
+        ; Verify that the titles match closely
+        similarity := Fn_StringSimilarityAttempt(AllMoviesDB[A_Index, "title"], data.Title)
+        if (similarity < Settings.titlematchsimilaritythreshold || !data.Title) {
+            ; msgbox, % "titles too dissimiliar"
+            return
+        }
+
+
+        excelcoumn := "A"
         excelindex := AllMoviesDB[A_Index, "excelindex"]
-        msgbox, % data.Actors
-        Excel_obj.Range("B" excelindex).Value := data.Actors
+        ; Write values to excel
+        for key, value in Settings.datapoints {
+            thisvalue := Fn_SearchObj(data, value)
+            excelcoumn := Fn_IncrementExcelColumn(excelcoumn,1)
+
+            AllMoviesDB[A_Index, value] := thisvalue
+            Excel_obj.Range(excelcoumn excelindex).Value := thisvalue
+        }
+
         Excel_obj.ActiveWorkbook.saved := true
-        Excel_obj.ActiveWorkbook.SaveAs(A_ScriptDir . "\ExampleBook.xlsx")
+        ; Excel_obj.ActiveWorkbook.SaveAs(The_ExcelPath)
+        return
     }
 }
-Excel_obj.Quit
 return
 
 ; Array_GUI(AllMoviesDB)
 ExitApp, 1
-
-
-
-;Select the appropriot script or default
-ReReadFile:
-; GuiControl, Text , MainDropdown_List, % scriptdropdowns
-LV_Delete() ;clear the listview
-
-
-
-;;Fill GUI with whats to be done and assign index values to each item
-INDEX := 0
-for key, value in AllSteps_JSON { ;;- Each step
-    INDEX++
-    ; for key2, value2 in value.machines { ;;- Each machine
-    ; }
-}
-;resize columns to fit all text
-LV_ModifyCol()
-
-
-
-;; Process each step after user presses Start
-Start:
-;Grab the selected script
-GuiControlGet, OutputVar ,, MainDropdown_List, Text
-INDEX := 0
-log.add(The_ProjectName " Running " SelectedScript " with the " A_UserName " credentials from " A_ComputerName)
-;;Create new Remote_Control class
-RemoteControl := New RemoteControl_Class("TOP")
-
-for key, value in AllItems_JSON { ; - Each step
-; INDEX++
-;     LV_Modify(INDEX,,,,,"IN PROGRESS")
-}
-Return
 
 
 
@@ -224,4 +231,77 @@ Fn_CheckIMDB(para_movietitle, para_year := "null")
     }
     ;Save Raw just for later viewing
     
+}
+
+
+Fn_SearchObj(para_obj, para_key)
+{
+    for l_key, l_value in para_obj {
+        ; msgbox, % para_key " - " l_key
+        if (para_key = l_key) {
+            return l_value
+        }
+    }
+}
+
+
+Fn_StringSimilarityAttempt(para_string1, para_string2) {
+    result := DamerauLevenshteinDistance(para_string1, para_string2)
+    if (result >= 0) {
+        return result
+    } else {
+        return 100
+    }
+}
+
+
+DamerauLevenshteinDistance(s, t) {
+	StringLen, m, s
+	StringLen, n, t
+	If m = 0
+		Return, n
+	If n = 0
+		Return, m
+	d0_0 = 0
+	Loop, % 1 + m
+		d0_%A_Index% = %A_Index%
+	Loop, % 1 + n
+		d%A_Index%_0 = %A_Index%
+	ix = 0
+	iy = -1
+	Loop, Parse, s
+	{
+		sc = %A_LoopField%
+		i = %A_Index%
+		jx = 0
+		jy = -1
+		Loop, Parse, t
+		{
+			a := d%ix%_%jx% + 1, b := d%i%_%jx% + 1, c := (A_LoopField != sc) + d%ix%_%jx%
+				, d%i%_%A_Index% := d := a < b ? a < c ? a : c : b < c ? b : c
+			If (i > 1 and A_Index > 1 and sc == tx and sx == A_LoopField)
+				d%i%_%A_Index% := d < c += d%iy%_%ix% ? d : c
+			jx++
+			jy++
+			tx = %A_LoopField%
+		}
+		ix++
+		iy++
+		sx = %A_LoopField%
+	}
+	Return, d%m%_%n%
+}
+
+
+Fn_IncrementExcelColumn(para_Column,para_IncrementAmmount)
+{
+    ;Convert Column to a character code from its existing ASCII counterpart
+    l_Column := Asc(para_Column)
+    l_Column += %para_IncrementAmmount%
+        If (l_Column > 122)
+        {
+        Msgbox, Columns greater than Z are not handled. The program will exit.
+        ExitApp
+        }
+    Return Chr(l_Column)
 }
