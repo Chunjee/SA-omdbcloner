@@ -14,13 +14,9 @@ SetBatchLines -1 ;Go as fast as CPU will allow
 #SingleInstance Force ;Do not allow running more then one instance at a time
 ComObjError(False) ; Ignore any http timeouts
 
-;Hide CMD window
-DllCall("AllocConsole")
-WinHide % "ahk_id " DllCall("GetConsoleWindow", "ptr")
-
 
 ;Dependencies
-#Include %A_ScriptDir%\functions
+#Include %A_ScriptDir%\lib
 #Include util_misc.ahk
 #Include util_arrays.ahk
 #Include json.ahk
