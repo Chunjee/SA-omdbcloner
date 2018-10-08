@@ -1,5 +1,9 @@
 {
     "endpoint": "http://www.omdbapi.com/?",
     "optionals": "&type=movie&r=json",
-    "key": ""
+    "key": "",
+    "datapoints": ["Rated","Runtime","Genre","Director","Writer","Actors","Language","Awards","Poster","Metascore","imdbRating","DVD","Website"],
+    "titlematchsimilaritythreshold": "8",
+    "excelfilename": "ExampleBook.xlsx",
+    "examplequery": "http://www.omdbapi.com/?apikey=7c458505&t=Return%20of%20the%20Jedi%20&y=1983&type=movie&r=json"
 }
