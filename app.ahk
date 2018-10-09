@@ -4,7 +4,7 @@
 ; Compares movie titles in an excel file to OMDB/IMDB for extra information which is re-saved to Excel
 ; 
 The_ProjectName := "MovieDBClone"
-The_VersionNumb = 1.0.0
+The_VersionNumb = 1.0.4
 
 ;~~~~~~~~~~~~~~~~~~~~~
 ;Compile Options
@@ -22,7 +22,7 @@ ComObjError(False) ; Ignore any http timeouts
 #Include json.ahk
 
 ;For Debug Only
-; #Include ahk-unittest.ahk
+#Include ahk-unittest.ahk
 
 
 ;Classes
@@ -51,9 +51,16 @@ log.initalizeNewLogFile(false, The_ProjectName " v" The_VersionNumb " log begins
 log.add(The_ProjectName " launched from user " A_UserName " on the machine " A_ComputerName ". Version: v" The_VersionNumb)
 
 
-; msgbox, % "test1 " Fn_StringSimilarityAttempt("test", "test")
-; msgbox, % "test2 " Fn_StringSimilarityAttempt("tasddddasd", "teiiiiiter")
-; msgbox, % "test3 " Fn_StringSimilarityAttempt("asdjkjerkquiqwue", "popiiklkpol..liki")
+
+
+;;Create run some unittests
+assert := new unittest_class()
+; msgbox, % Fn_StringSimilarity("The Mask", "The mbsk")
+; msgbox, % Fn_StringSimilarity("The Mask", "A flight to remember")
+assert.test((Fn_StringSimilarity("The eturn of the king", "The Return of the King") > 0.90 ),true)
+assert.test((Fn_StringSimilarity("The Mask", "the mask") = 1 ),true)
+assert.test((Fn_StringSimilarity("set", "ste") = 0 ),true)
+assert.report()
 
 
 ;Read settings.JSON for global settings
@@ -116,6 +123,7 @@ SetTimer, PingIMDB, 1000
 
 
 ;;Fill GUI with whats being done
+sleep, 2000
 INDEX := 0
 for key, value in AllMoviesDB { ;;- Each step
     INDEX++
@@ -241,6 +249,41 @@ Fn_SearchObj(para_obj, para_key)
 }
 
 
+Fn_StringSimilarityAttempt2(para_string1, para_string2) {
+    ;check if both strings are the same
+    if (para_string1 = para_string2) {
+        return 1
+    }
+
+    dl_distance := DamerauLevenshteinDistance(para_string1, para_string2)
+    if (dl_distance = "") {
+        dl_distance := 20 
+    }
+
+    ;Find the string length difference
+    if (StrLen(para_string1) > StrLen(para_string2)) {
+        stringLenDifference := StrLen(para_string1) - StrLen(para_string2)
+    } else {
+        stringLenDifference := StrLen(para_string2) - StrLen(para_string1)
+    }
+    msgbox, % "str len " stringLenDifference
+
+    if (stringLenDifference > 10) {
+        result := ( dl_distance * stringLenDifference ) / 100  ;half the 
+    } else {
+        result := dl_distance / 100
+    }
+
+    ;invert
+    result := 1 - result
+    if (result > 1 || result < 0) {
+        return 0.010
+    }
+
+    return Round(result, 2)
+}
+
+
 Fn_StringSimilarityAttempt(para_string1, para_string2) {
     result := DamerauLevenshteinDistance(para_string1, para_string2)
     if (result >= 0) {
@@ -300,4 +343,23 @@ Fn_IncrementExcelColumn(para_Column,para_IncrementAmmount)
         ExitApp
         }
     Return Chr(l_Column)
+}
+
+Fn_StringSimilarity(para_string1,para_string2) {
+    ;Sørensen-Dice coefficient
+    vCount := 0
+    oArray := {}
+    oArray := {base:{__Get:Func("Abs").Bind(0)}} ;make default key value 0 instead of a blank string
+    Loop, % vCount1 := StrLen(para_string1) - 1
+        oArray["z" SubStr(para_string1, A_Index, 2)]++
+    Loop, % vCount2 := StrLen(para_string2) - 1
+        if (oArray["z" SubStr(para_string2, A_Index, 2)] > 0)
+        {
+            oArray["z" SubStr(para_string2, A_Index, 2)]--
+            vCount++
+        }
+    vDSC := (2 * vCount) / (vCount1 + vCount2)
+    ; vDSC := 1 - vDSC
+    ; MsgBox, % vCount " " vCount1 " " vCount2 "`r`n" vDSC
+    return Round(vDSC,2)
 }
