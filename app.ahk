@@ -4,7 +4,7 @@
 ; Compares movie titles in an excel file to OMDB/IMDB for extra information which is re-saved to Excel
 ; 
 The_ProjectName := "MovieDBClone"
-The_VersionNumb = 1.0.4
+The_VersionNumb = 1.0.5
 
 ;~~~~~~~~~~~~~~~~~~~~~
 ;Compile Options
@@ -155,9 +155,9 @@ Loop, % AllMoviesDB.MaxIndex() {
         AllMoviesDB[A_Index, "checked"] := true
 
         ; Verify that the titles match closely
-        similarity := Fn_StringSimilarityAttempt(AllMoviesDB[A_Index, "title"], data.Title)
-        if (similarity < Settings.titlematchsimilaritythreshold || !data.Title) {
-            ; msgbox, % "titles too dissimiliar"
+        similarity := Fn_StringSimilarity(AllMoviesDB[A_Index, "title"], data.Title)
+        if (similarity <= Settings.titlematchsimilaritythreshold || !data.Title) {
+            msgbox, , The_ProjectName, % "When searching for " AllMoviesDB[A_Index, "title"] "; the return value ''" data.Title "'' was rated " similarity " which is below the settings threshold of " Settings.titlematchsimilaritythreshold "`n`nConsider lowering the threshold or set a negative number to accept all results", 10
             return
         }
 
@@ -218,8 +218,7 @@ Fn_CheckIMDB(para_movietitle, para_year := "null")
         endpoint := endpoint Settings.optionals
     }
 
-    clipboard := endpoint
-    ; msgbox, % endpoint
+    ; clipboard := endpoint
     http := ComObjCreate("WinHttp.WinHttpRequest.5.1")
     http.Open("Get", endpoint, False)
     ; http.SetRequestHeader("Accept", "application/json")
@@ -245,51 +244,6 @@ Fn_SearchObj(para_obj, para_key)
         if (para_key = l_key) {
             return l_value
         }
-    }
-}
-
-
-Fn_StringSimilarityAttempt2(para_string1, para_string2) {
-    ;check if both strings are the same
-    if (para_string1 = para_string2) {
-        return 1
-    }
-
-    dl_distance := DamerauLevenshteinDistance(para_string1, para_string2)
-    if (dl_distance = "") {
-        dl_distance := 20 
-    }
-
-    ;Find the string length difference
-    if (StrLen(para_string1) > StrLen(para_string2)) {
-        stringLenDifference := StrLen(para_string1) - StrLen(para_string2)
-    } else {
-        stringLenDifference := StrLen(para_string2) - StrLen(para_string1)
-    }
-    msgbox, % "str len " stringLenDifference
-
-    if (stringLenDifference > 10) {
-        result := ( dl_distance * stringLenDifference ) / 100  ;half the 
-    } else {
-        result := dl_distance / 100
-    }
-
-    ;invert
-    result := 1 - result
-    if (result > 1 || result < 0) {
-        return 0.010
-    }
-
-    return Round(result, 2)
-}
-
-
-Fn_StringSimilarityAttempt(para_string1, para_string2) {
-    result := DamerauLevenshteinDistance(para_string1, para_string2)
-    if (result >= 0) {
-        return result
-    } else {
-        return 100
     }
 }
 
