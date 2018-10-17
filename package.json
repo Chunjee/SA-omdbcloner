@@ -16,7 +16,6 @@
         "sort-array.ahk": "chunjee/sort-array.ahk",
         "string-similarity.ahk": "chunjee/string-similarity.ahk"
      },
-    
     "author": "Shawn Brooker",
     "license": "MIT"
 }
