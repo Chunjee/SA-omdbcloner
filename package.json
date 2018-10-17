@@ -14,7 +14,8 @@
         "logs.ahk": "chunjee/logs.ahk",
         "json.ahk": "chunjee/json.ahk",
         "sort-array.ahk": "chunjee/sort-array.ahk",
-        "string-similarity.ahk": "chunjee/string-similarity.ahk"
+        "string-similarity.ahk": "chunjee/string-similarity.ahk",
+        "util_misc.ahk": "gist:chunjee/cf6c862be8fa18c546d2fd67d86f84aa"
      },
     "author": "Shawn Brooker",
     "license": "MIT"
