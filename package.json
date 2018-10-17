@@ -11,10 +11,12 @@
         "url": "https://github.com/Chunjee/SA-omdbcloner"
     },
     "dependencies": {
-        "log": "chunjee/ahk-log.ahk",
-        "json": "chunjee/json.ahk"
+        "logs.ahk": "chunjee/logs.ahk",
+        "json.ahk": "chunjee/json.ahk",
+        "sort-array.ahk": "chunjee/sort-array.ahk",
+        "string-similarity.ahk": "chunjee/string-similarity.ahk"
      },
     
-    "author": "uncredited",
+    "author": "Shawn Brooker",
     "license": "MIT"
 }
