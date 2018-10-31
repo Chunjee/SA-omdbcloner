@@ -1,6 +1,6 @@
 {
     "name": "sa-omdbcloner.ahk",
-    "version": "1.0.0",
+    "version": "1.0.6",
     "description": "clones data from IMDB to one large excel sheet",
     "main": "app.ahk",
     "scripts": {
