@@ -4,7 +4,7 @@
 ; Compares movie titles in an excel file to OMDB/IMDB for extra information which is re-saved to Excel
 ; 
 The_ProjectName := "MovieDBClone"
-The_VersionNumb = 1.0.5
+The_VersionNumb = 1.0.6
 
 ;~~~~~~~~~~~~~~~~~~~~~
 ;Compile Options
@@ -17,29 +17,28 @@ ComObjError(False) ; Ignore any http timeouts
 
 ;Dependencies
 #Include %A_ScriptDir%\lib
-#Include util_misc.ahk
-#Include util_arrays.ahk
-#Include json.ahk
+; #Include util_array.ahk
+#Include %A_ScriptDir%\lib\util-misc.ahk\export.ahk
 
 ;For Debug Only
-#Include ahk-unittest.ahk
-
+; #Include %A_ScriptDir%\lib\unit-testing.ahk\export.ahk
 
 ;Classes
-#Include %A_ScriptDir%\classes
-#Include Logging.ahk
-
+#Include %A_ScriptDir%\lib\logs.ahk\export.ahk
+#Include %A_ScriptDir%\lib\json.ahk\export.ahk
+#Include %A_ScriptDir%\lib\sort-array.ahk\export.ahk
+#Include %A_ScriptDir%\lib\string-similarity.ahk\export.ahk
+; #Include %A_ScriptDir%\lib\sift.ahk\export.ahk
 
 ;Modules
 #Include %A_ScriptDir%
 #Include GUI.ahk
 
 
-Sb_InstallFiles() ;Install included files and make any directories required
-
 ;/--\--/--\--/--\--/--\--/--\--/--\--/--\--/--\--/--\--/--\--/--\--/--\--/--\--/--\--/--\--/--\--/--\--/--\--/--\--/--\--/--\
 ; StartUp
 ;\--/--\--/--\--/--\--/--\--/--\--/--\--/--\--/--\--/--\--/--\--/--\--/--\--/--\--/--\--/--\--/--\--/--\--/--\--/--\--/--\--/
+
 
 ;;Creat Logging obj
 log := new Log_class(The_ProjectName "-" A_YYYY A_MM A_DD, A_ScriptDir "\LogFiles")
@@ -50,17 +49,6 @@ log.preEntryString := "%A_NowUTC% -- "
 log.initalizeNewLogFile(false, The_ProjectName " v" The_VersionNumb " log begins...`n")
 log.add(The_ProjectName " launched from user " A_UserName " on the machine " A_ComputerName ". Version: v" The_VersionNumb)
 
-
-
-
-;;Create run some unittests
-assert := new unittest_class()
-; msgbox, % Fn_StringSimilarity("The Mask", "The mbsk")
-; msgbox, % Fn_StringSimilarity("The Mask", "A flight to remember")
-assert.test((Fn_StringSimilarity("The eturn of the king", "The Return of the King") > 0.90 ),true)
-assert.test((Fn_StringSimilarity("The Mask", "the mask") = 1 ),true)
-assert.test((Fn_StringSimilarity("set", "ste") = 0 ),true)
-assert.report()
 
 
 ;Read settings.JSON for global settings
@@ -78,7 +66,7 @@ The_ExcelPath := A_ScriptDir "\" Settings.excelfilename
 Excel_obj := ComObjCreate("Excel.Application") ; create Excel Application object
 Excel_obj.Visible := true ; make Excel Application invisible
 Excel_obj.Workbooks.Open(The_ExcelPath) ;open an existing file
-
+log.add("Opened Excel file: " The_ExcelPath)
 
 ;;Create a blank GUI
 GUI()
@@ -97,13 +85,13 @@ While (KeepReading = true) {
     }
 
     rawtext := Excel_obj.Range("A" Index).Value
-    TheMovie_title := Fn_QuickRegEx(rawtext,"([\w ]+)")
+    TheMovie_title := fn_GetTitle(rawtext)
     TheMovie_year := Fn_QuickRegEx(rawtext,"\((\d+)\)")
     if (Excel_obj.Range("B" Index).Value != "") {
         AllMoviesDB[Index, "checked"] := true
     }
 
-    if (TheMovie_title != "null") {
+    if (TheMovie_title) {
         
     } else {
         KeepReading := false
@@ -155,7 +143,7 @@ Loop, % AllMoviesDB.MaxIndex() {
         AllMoviesDB[A_Index, "checked"] := true
 
         ; Verify that the titles match closely
-        similarity := Fn_StringSimilarity(AllMoviesDB[A_Index, "title"], data.Title)
+        similarity := stringSimilarity.compareTwoStrings(AllMoviesDB[A_Index, "title"], data.Title)
         if (similarity <= Settings.titlematchsimilaritythreshold || !data.Title) {
             msgbox, , The_ProjectName, % "When searching for " AllMoviesDB[A_Index, "title"] "; the return value ''" data.Title "'' was rated " similarity " which is below the settings threshold of " Settings.titlematchsimilaritythreshold "`n`nConsider lowering the threshold or set a negative number to accept all results", 10
             return
@@ -166,7 +154,7 @@ Loop, % AllMoviesDB.MaxIndex() {
         excelindex := AllMoviesDB[A_Index, "excelindex"]
         ; Write values to excel
         for key, value in Settings.datapoints {
-            thisvalue := Fn_SearchObj(data, value)
+            thisvalue := Fn_SearchObjWithKey(data, value)
             excelcoumn := Fn_IncrementExcelColumn(excelcoumn,1)
 
             AllMoviesDB[A_Index, value] := thisvalue
@@ -191,12 +179,6 @@ ExitApp, 1
 ; Subroutines
 ;\--/--\--/--\--/--\--/--\--/
 
-;Create Directory and install needed file(s)
-Sb_InstallFiles()
-{
-    ; FileCreateDir, %A_ScriptDir%\data\
-}
-
 
 
 
@@ -216,6 +198,7 @@ Fn_CheckIMDB(para_movietitle, para_year := "null")
     }
     if (Settings.optionals) {
         endpoint := endpoint Settings.optionals
+        clipboard := endpoint
     }
 
     ; clipboard := endpoint
@@ -237,7 +220,7 @@ Fn_CheckIMDB(para_movietitle, para_year := "null")
 }
 
 
-Fn_SearchObj(para_obj, para_key)
+Fn_SearchObjWithKey(para_obj, para_key)
 {
     for l_key, l_value in para_obj {
         ; msgbox, % para_key " - " l_key
@@ -248,44 +231,6 @@ Fn_SearchObj(para_obj, para_key)
 }
 
 
-DamerauLevenshteinDistance(s, t) {
-	StringLen, m, s
-	StringLen, n, t
-	If m = 0
-		Return, n
-	If n = 0
-		Return, m
-	d0_0 = 0
-	Loop, % 1 + m
-		d0_%A_Index% = %A_Index%
-	Loop, % 1 + n
-		d%A_Index%_0 = %A_Index%
-	ix = 0
-	iy = -1
-	Loop, Parse, s
-	{
-		sc = %A_LoopField%
-		i = %A_Index%
-		jx = 0
-		jy = -1
-		Loop, Parse, t
-		{
-			a := d%ix%_%jx% + 1, b := d%i%_%jx% + 1, c := (A_LoopField != sc) + d%ix%_%jx%
-				, d%i%_%A_Index% := d := a < b ? a < c ? a : c : b < c ? b : c
-			If (i > 1 and A_Index > 1 and sc == tx and sx == A_LoopField)
-				d%i%_%A_Index% := d < c += d%iy%_%ix% ? d : c
-			jx++
-			jy++
-			tx = %A_LoopField%
-		}
-		ix++
-		iy++
-		sx = %A_LoopField%
-	}
-	Return, d%m%_%n%
-}
-
-
 Fn_IncrementExcelColumn(para_Column,para_IncrementAmmount)
 {
     ;Convert Column to a character code from its existing ASCII counterpart
@@ -293,13 +238,14 @@ Fn_IncrementExcelColumn(para_Column,para_IncrementAmmount)
     l_Column += %para_IncrementAmmount%
         If (l_Column > 122)
         {
-        Msgbox, Columns greater than Z are not handled. The program will exit.
-        ExitApp
+            Msgbox, Columns greater than Z are not handled. The program will exit.
+            ExitApp
         }
-    Return Chr(l_Column)
+    return Chr(l_Column)
 }
 
-Fn_StringSimilarity(para_string1,para_string2) {
+
+Fn_SDCSimilarity(para_string1,para_string2) {
     ;Sørensen-Dice coefficient
     vCount := 0
     oArray := {}
@@ -313,7 +259,22 @@ Fn_StringSimilarity(para_string1,para_string2) {
             vCount++
         }
     vDSC := (2 * vCount) / (vCount1 + vCount2)
-    ; vDSC := 1 - vDSC
     ; MsgBox, % vCount " " vCount1 " " vCount2 "`r`n" vDSC
     return Round(vDSC,2)
+}
+
+
+fn_GetTitle(para_rawtext)
+{
+    global 
+
+    text1 := Fn_QuickRegEx(para_rawtext,"(.+)\(")
+    if (text1) {
+        return Trim(text1," ")
+    }
+    text2 := Fn_QuickRegEx(para_rawtext,"(.+)")
+    if (text2) {
+        return Trim(text2," ")
+    }
+    return false
 }
