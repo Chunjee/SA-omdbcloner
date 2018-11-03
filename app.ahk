@@ -4,7 +4,7 @@
 ; Compares movie titles in an excel file to OMDB/IMDB for extra information which is re-saved to Excel
 ; 
 The_ProjectName := "MovieDBClone"
-The_VersionNumb = 1.0.6
+The_VersionNumb = 1.0.7
 
 ;~~~~~~~~~~~~~~~~~~~~~
 ;Compile Options
@@ -78,11 +78,6 @@ log.add("GUI launched.")
 Index := 1
 KeepReading := true
 While (KeepReading = true) {
-    if (Index = 1) {
-        ; do not read the column header
-        Index++
-        continue
-    }
 
     rawtext := Excel_obj.Range("A" Index).Value
     TheMovie_title := fn_GetTitle(rawtext)
@@ -105,8 +100,10 @@ While (KeepReading = true) {
     }
     Index++
 }
+AllMoviesDB.RemoveAt(1, 1) ;because reading excel always seems to read the first header as the first line; remove it. 
 
 SetTimer, PingIMDB, 1000
+; SetTimer, WriteJSONDB, 30000
 ; Array_GUI(AllMoviesDB)
 
 
@@ -119,9 +116,12 @@ for key, value in AllMoviesDB { ;;- Each step
 }
 ;resize columns to fit all text
 LV_ModifyCol()
-
 return
 
+
+WriteJSONDB:
+sb_ExportJSON(AllMoviesDB, A_ScriptDir "\AllMoviesDB.json")
+return
 
 
 PingIMDB:
@@ -152,17 +152,23 @@ Loop, % AllMoviesDB.MaxIndex() {
 
         excelcoumn := "A"
         excelindex := AllMoviesDB[A_Index, "excelindex"]
+        D_Index := A_Index
         ; Write values to excel
         for key, value in Settings.datapoints {
             thisvalue := Fn_SearchObjWithKey(data, value)
             excelcoumn := Fn_IncrementExcelColumn(excelcoumn,1)
 
-            AllMoviesDB[A_Index, value] := thisvalue
+            AllMoviesDB[D_Index, value] := thisvalue
             Excel_obj.Range(excelcoumn excelindex).Value := thisvalue
         }
 
         Excel_obj.ActiveWorkbook.saved := true
         ; Excel_obj.ActiveWorkbook.SaveAs(The_ExcelPath)
+
+        ;Write to json file if at last line:
+        if (A_Index = AllMoviesDB.MaxIndex()) {
+            Gosub, WriteJSONDB
+        }
         return
     }
 }
@@ -179,7 +185,14 @@ ExitApp, 1
 ; Subroutines
 ;\--/--\--/--\--/--\--/--\--/
 
+sb_ExportJSON(para_DataObj, para_Filepath)
+{
+    global JSON
 
+    l_memoryfile := JSON.stringify(para_DataObj)
+    FileDelete, %para_Filepath%
+    FileAppend, %l_memoryfile%, %para_Filepath%
+}
 
 
 
@@ -216,7 +229,6 @@ Fn_CheckIMDB(para_movietitle, para_year := "null")
         return false
     }
     ;Save Raw just for later viewing
-    
 }
 
 
@@ -231,7 +243,7 @@ Fn_SearchObjWithKey(para_obj, para_key)
 }
 
 
-Fn_IncrementExcelColumn(para_Column,para_IncrementAmmount)
+Fn_IncrementExcelColumn(para_Column, para_IncrementAmmount)
 {
     ;Convert Column to a character code from its existing ASCII counterpart
     l_Column := Asc(para_Column)
