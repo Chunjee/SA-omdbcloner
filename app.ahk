@@ -28,7 +28,6 @@ ComObjError(False) ; Ignore any http timeouts
 #Include %A_ScriptDir%\lib\json.ahk\export.ahk
 #Include %A_ScriptDir%\lib\sort-array.ahk\export.ahk
 #Include %A_ScriptDir%\lib\string-similarity.ahk\export.ahk
-; #Include %A_ScriptDir%\lib\sift.ahk\export.ahk
 
 ;Modules
 #Include %A_ScriptDir%
