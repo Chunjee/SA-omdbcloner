@@ -1,6 +1,6 @@
 {
     "name": "sa-omdbcloner.ahk",
-    "version": "1.0.6",
+    "version": "1.0.0",
     "description": "clones data from IMDB to one large excel sheet",
     "main": "app.ahk",
     "scripts": {
@@ -11,12 +11,13 @@
         "url": "https://github.com/Chunjee/SA-omdbcloner"
     },
     "dependencies": {
-        "logs.ahk": "chunjee/logs.ahk",
         "json.ahk": "chunjee/json.ahk",
+        "logs.ahk": "chunjee/logs.ahk",
         "sort-array.ahk": "chunjee/sort-array.ahk",
         "string-similarity.ahk": "chunjee/string-similarity.ahk",
-        "util_misc.ahk": "gist:chunjee/cf6c862be8fa18c546d2fd67d86f84aa"
-     },
-    "author": "Shawn Brooker",
+        "unit-testing.ahk": "github:chunjee/unit-testing.ahk",
+        "util-misc.ahk": "gist:cf6c862be8fa18c546d2fd67d86f84aa"
+    },
+    "author": "uncredited",
     "license": "MIT"
 }

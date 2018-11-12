@@ -4,7 +4,7 @@
 ; Compares movie titles in an excel file to OMDB/IMDB for extra information which is re-saved to Excel
 ; 
 The_ProjectName := "MovieDBClone"
-The_VersionNumb = 1.0.7
+The_VersionNumb = 1.0.9
 
 ;~~~~~~~~~~~~~~~~~~~~~
 ;Compile Options
@@ -17,17 +17,14 @@ ComObjError(False) ; Ignore any http timeouts
 
 ;Dependencies
 #Include %A_ScriptDir%\lib
-; #Include util_array.ahk
 #Include %A_ScriptDir%\lib\util-misc.ahk\export.ahk
-
-;For Debug Only
-; #Include %A_ScriptDir%\lib\unit-testing.ahk\export.ahk
-
-;Classes
 #Include %A_ScriptDir%\lib\logs.ahk\export.ahk
 #Include %A_ScriptDir%\lib\json.ahk\export.ahk
 #Include %A_ScriptDir%\lib\sort-array.ahk\export.ahk
 #Include %A_ScriptDir%\lib\string-similarity.ahk\export.ahk
+
+;For Debug Only
+; #Include %A_ScriptDir%\lib\unit-testing.ahk\export.ahk
 
 ;Modules
 #Include %A_ScriptDir%
