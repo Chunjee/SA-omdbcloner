@@ -1,7 +1,7 @@
 #NoTrayIcon
 
 
-assert := new unittest_class()
+assert := new unittesting()
 
 ;Test Excel column incrementing
 assert.test(Fn_IncrementExcelColumn("C",1),"D")
@@ -18,7 +18,7 @@ assert.test(fn_GetTitle("OSS 117: Cairo, Nest of Spies"),"OSS 117: Cairo, Nest o
 assert.test(stringSimilarity.simpleBestMatch("Smart", ["smarts","marts","clip-art"]),"smarts")
 
 
-msgbox, % assert.fullreport()
+assert.fullreport()
 ExitApp
 
 #Include app.ahk
